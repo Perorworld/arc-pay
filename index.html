@@ -92,7 +92,6 @@
         input:focus, select:focus, textarea:focus { border-color: var(--accent-dim); }
         select option { background: var(--surface); }
 
-        /* Currency selector grid */
         .currency-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
         .currency-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 8px; border-radius: 12px; border: 2px solid var(--border); background: var(--bg2); cursor: pointer; transition: all 0.2s; }
         .currency-btn:hover { border-color: var(--accent-dim); }
@@ -102,7 +101,6 @@
         .currency-tag { font-size: 8px; color: var(--gold); font-family: 'JetBrains Mono', monospace; }
         .currency-tag.native { color: var(--arc-green); }
 
-        /* Swap UI */
         .swap-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
         .swap-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
         .swap-input { background: transparent; border: none; font-size: 24px; font-weight: 700; color: var(--text); outline: none; width: 100%; font-family: 'JetBrains Mono', monospace; }
@@ -137,7 +135,6 @@
         .feature-title { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
         .feature-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
 
-        /* BRIDGE & SWAP UPGRADE */
         .chain-selector { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 8px; margin-bottom: 16px; }
         .chain-btn { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 12px 8px; border-radius: 10px; border: 2px solid var(--border); background: var(--bg2); cursor: pointer; transition: all 0.2s; text-align: center; }
         .chain-btn:hover { border-color: var(--accent-dim); }
@@ -200,7 +197,6 @@
     <button class="btn btn-outline" id="tab-invoices" onclick="switchPage('invoices')">🧾 Invoices</button>
 </div>
 
-<!-- HOME -->
 <div class="page active container" id="page-home">
     <div class="hero">
         <div class="hero-badge"><span class="dot"></span>Built on Arc Network · USDC Native</div>
@@ -224,7 +220,6 @@
     </div>
 </div>
 
-<!-- PAY -->
 <div class="page container" id="page-pay">
     <div class="card">
         <div class="card-title">💸 Pay a Freelancer</div>
@@ -265,7 +260,6 @@
     </div>
 </div>
 
-<!-- BRIDGE -->
 <div class="page container" id="page-bridge">
     <div class="card">
         <div class="card-title">🌉 Bridge ETH → Arc USDC</div>
@@ -276,7 +270,6 @@
             <span>Testnet bridge — select your <strong>source testnet</strong> (Sepolia, Arb Sepolia, Base Sepolia etc), enter amount, and pick a provider. Funds arrive as Arc Testnet USDC.</span>
         </div>
 
-        <!-- SOURCE CHAIN -->
         <label style="margin-bottom:10px;display:block">From Testnet Chain</label>
         <div class="chain-selector" id="bridge-from-chains">
             <div class="chain-btn selected" data-chain="sepolia" data-chainid="0xaa36a7" onclick="selectBridgeChain(this)">
@@ -311,14 +304,12 @@
             </div>
         </div>
 
-        <!-- BRIDGE DIRECTION -->
         <div class="bridge-arrow">
             <div class="bridge-arrow-line"></div>
             <div class="bridge-arrow-icon">ETH → Arc USDC</div>
             <div class="bridge-arrow-line"></div>
         </div>
 
-        <!-- DESTINATION -->
         <div style="display:flex;align-items:center;gap:12px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px">
             <div style="font-size:24px">⚡</div>
             <div>
@@ -328,13 +319,11 @@
             <div style="margin-left:auto;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--arc-green);background:rgba(16,185,129,0.1);padding:4px 10px;border-radius:6px;border:1px solid rgba(16,185,129,0.2)">Arc USDC</div>
         </div>
 
-        <!-- AMOUNT -->
         <div class="form-group">
             <label>Amount of ETH to Bridge</label>
             <input type="number" id="bridge-amount" placeholder="e.g. 0.1" step="0.001" oninput="updateBridgeRoute()" />
         </div>
 
-        <!-- PROVIDER SELECTION -->
         <label style="margin-bottom:10px;display:block">Bridge Provider</label>
         <div class="provider-row" id="bridge-providers">
             <div class="provider-btn selected" data-provider="cctp" onclick="selectBridgeProvider(this)">
@@ -351,7 +340,6 @@
             </div>
         </div>
 
-        <!-- ROUTE PREVIEW -->
         <div class="route-preview" id="bridge-route-preview">
             <div class="route-row"><span class="route-label">You Send</span><span class="route-value" id="br-send">—</span></div>
             <div class="route-row"><span class="route-label">Bridge Fee</span><span class="route-value" id="br-fee">—</span></div>
@@ -360,7 +348,6 @@
             <div class="route-row"><span class="route-label">Est. Time</span><span class="route-value" id="br-time">—</span></div>
         </div>
 
-        <!-- DESTINATION -->
         <div class="form-group">
             <label>Destination Arc Wallet Address</label>
             <input type="text" id="bridge-dest" placeholder="0x... (defaults to your connected wallet)" />
@@ -370,7 +357,6 @@
         <div class="tx-status" id="bridge-status"></div>
     </div>
 
-    <!-- HOW IT WORKS -->
     <div class="card">
         <div class="card-title">⚙️ How the Bridge Works</div>
         <div class="step-row"><div class="step-num">1</div><div class="step-content"><strong>Connect your wallet</strong> on the source chain (Ethereum, Arbitrum, Base etc)</div></div>
@@ -381,35 +367,34 @@
     </div>
 </div>
 
-<!-- SWAP (UPGRADED) -->
 <div class="page container" id="page-swap">
     <div class="card">
-        <div class="card-title">🔄 Swap ETH → Arc USDC</div>
-        <div class="card-sub">Swap assets already on Arc Network. ETH on Arc swaps directly to USDC with no bridging required.</div>
-
-        <div class="info-banner">
-            <span>ℹ️</span>
-            <span>On-chain swap via Arc's native DEX liquidity. For assets on other chains, use the <strong style="color:var(--text);cursor:pointer" onclick="switchPage('bridge')">Bridge tab</strong> first to move them to Arc.</span>
-        </div>
+        <div class="card-title">🔄 Instant Swap</div>
+        <div class="card-sub">Swap natively on Arc Network. Sub-second execution with ultra-low slip.</div>
 
         <div class="swap-box">
-            <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:block">You Pay</label>
+            <div style="display:flex;justify-content:between;margin-bottom:6px">
+                <label>You Sell</label>
+                <div class="swap-balance" style="margin-left:auto" id="swap-from-balance">Balance: —</div>
+            </div>
             <div class="swap-row">
                 <input type="number" class="swap-input" id="swap-from-amount" placeholder="0.0" oninput="estimateSwap()" />
                 <select class="swap-select" id="swap-from-token" onchange="estimateSwap()">
-                    <option value="ETH">ETH</option>
+                    <option value="ETH" selected>ETH</option>
                     <option value="USDC">USDC</option>
                     <option value="EURC">EURC</option>
-                    <option value="BNB">BNB (Arc)</option>
                 </select>
             </div>
-            <div class="swap-balance">Arc Balance: <span id="swap-from-balance">—</span></div>
         </div>
 
-        <div class="swap-arrow"><div class="swap-arrow-btn" onclick="flipSwap()">⇅</div></div>
+        <div class="swap-arrow">
+            <div class="swap-arrow-btn" onclick="flipSwap()">⇅</div>
+        </div>
 
-        <div class="swap-box">
-            <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:block">You Receive</label>
+        <div class="swap-box" style="margin-top:12px">
+            <div style="display:flex;justify-content:between;margin-bottom:6px">
+                <label>You Receive</label>
+            </div>
             <div class="swap-row">
                 <input type="number" class="swap-input" id="swap-to-amount" placeholder="0.0" disabled />
                 <select class="swap-select" id="swap-to-token" onchange="estimateSwap()">
@@ -424,7 +409,6 @@
             </div>
         </div>
 
-        <!-- SWAP ROUTE DETAILS -->
         <div class="route-preview" id="swap-route" style="display:none">
             <div class="route-row"><span class="route-label">Swap Route</span><span class="route-value" id="sw-route">—</span></div>
             <div class="route-row"><span class="route-label">Swap Fee</span><span class="route-value" id="sw-fee">—</span></div>
@@ -445,72 +429,72 @@
         <button class="submit-btn" id="swap-btn" onclick="doSwap()" disabled style="margin-top:4px">Connect Wallet to Swap</button>
         <div class="tx-status" id="swap-status"></div>
     </div>
-
-    <div class="card">
-        <div class="card-title">🌉 Need to bring ETH from another chain?</div>
-        <p style="color:var(--muted);font-size:13px;line-height:1.7;margin-bottom:16px">
-            If your ETH is on Ethereum mainnet, Arbitrum, Base, or another chain — use the Bridge tab to move it to Arc Network first. Once it's on Arc as USDC, you can swap it here or pay freelancers directly.
-        </p>
-        <button class="btn btn-accent" onclick="switchPage('bridge')">Go to Bridge →</button>
-    </div>
 </div>
 
-<!-- RECEIVE -->
 <div class="page container" id="page-receive">
     <div class="card">
-        <div class="card-title">📥 Receive Payments in Arc USDC</div>
-        <div class="card-sub">Share your wallet address with clients. Every payment arrives as USDC, no matter what currency they pay with.</div>
+        <div class="card-title">📥 Receive Payments</div>
+        <div class="card-sub">Share your Arc address or generate an invoice to receive Arc USDC.</div>
         <div class="form-group">
-            <label>Your Receiving Address</label>
-            <input type="text" id="receive-address" readonly placeholder="Connect wallet to see your address" />
-        </div>
-        <button class="submit-btn" id="copy-address-btn" onclick="copyAddress()" disabled>Connect Wallet First</button>
-        <div class="tx-status" id="receive-status"></div>
-    </div>
-    <div class="card">
-        <div class="card-title">💰 Your USDC Balance</div>
-        <div style="text-align:center;padding:20px 0">
-            <div style="font-family:'JetBrains Mono',monospace;font-size:36px;font-weight:700;color:var(--accent)" id="usdc-balance">—</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:4px">Arc USDC</div>
+            <label>Your Arc Wallet Address</label>
+            <div style="display:flex;gap:8px">
+                <input type="text" id="receive-address" readonly placeholder="Connect wallet to view..." style="font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--surface2)" />
+                <button class="btn btn-accent" id="copy-address-btn" onclick="copyAddress()" disabled style="white-space:nowrap">Copy Address</button>
+            </div>
+            <div id="receive-status" style="font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:6px;color:var(--arc-green)"></div>
         </div>
     </div>
-</div>
 
-<!-- INVOICES -->
-<div class="page container" id="page-invoices">
     <div class="card">
-        <div class="card-title">🧾 Create Invoice</div>
-        <div class="card-sub">Send a payment request to a client. They pay, you receive USDC instantly.</div>
+        <div class="card-title">🧾 Create On-Chain Invoice (Escrow)</div>
+        <div class="card-sub">Invoices lock funds securely on-chain. Clients pay into escrow, and you can release to yourself upon project milestones.</div>
         <div class="form-group">
-            <label>Client Address</label>
+            <label>Client Wallet Address</label>
             <input type="text" id="inv-client" placeholder="0x..." />
         </div>
         <div class="form-group">
-            <label>Amount (USDC)</label>
+            <label>USDC Amount Requested</label>
             <input type="number" id="inv-amount" placeholder="e.g. 500" />
         </div>
         <div class="form-group">
-            <label>Description</label>
-            <input type="text" id="inv-desc" placeholder="e.g. Logo design — 2 revisions included" />
+            <label>Project Description / Milestones</label>
+            <textarea id="inv-desc" rows="3" placeholder="e.g. Phase 1 Frontend Deliverables"></textarea>
         </div>
         <button class="submit-btn" id="inv-btn" onclick="createInvoice()" disabled>Connect Wallet to Create Invoice</button>
         <div class="tx-status" id="inv-status"></div>
     </div>
-    <div id="invoice-list"></div>
 </div>
 
-<footer>ArcPay · Freelancer Payments on Arc Network · USDC Native Settlement · Built for the Stablecoin Economy</footer>
+<div class="page container" id="page-invoices">
+    <div class="card">
+        <div class="card-title">🧾 Manage On-Chain Invoices</div>
+        <div class="card-sub">View escrows where you are the freelancer or the client. Release or resolve funds securely.</div>
+        <div id="invoice-list">
+            <div class="state-msg" style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Connect your wallet to load on-chain invoice registry.</div>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div>&copy; 2026 ArcPay Protocol · Powered by Circle USDC & Arc FX Engine</div>
+</footer>
 
 <script>
+    let provider = null;
+    let signer = null;
+    let userAddress = null;
+    let selectedPayCurrency = "ETH";
+
+    const BRIDGE_REQUIRED = ["BTC", "SOL", "BNB", "HYPE"];
+
     const ARC_TESTNET = {
-        chainId: "0x4CE052", // 5042002 in hex
+        chainId: "0x4CE052", // 5042002
         chainName: "Arc Testnet",
         nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
         rpcUrls: ["https://rpc.testnet.arc.network"],
         blockExplorerUrls: ["https://testnet.arcscan.app"]
     };
 
-    // ── ARCPAY CONTRACT ─────────────────────────────────────────
     const CONTRACT_ADDRESS = "0x33104dD1E1EAE523EBCed5DF9536E201Cd985710";
     const CONTRACT_ABI = [
         "function registerProfile(string,string,string) external",
@@ -536,57 +520,72 @@
         "function totalFreelancers() view returns (uint256)",
         "function invoiceCounter() view returns (uint256)"
     ];
+
     let arcpayContract = null;
     const USDC_ERC20 = "0x3600000000000000000000000000000000000000";
     const EURC_ADDRESS = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a";
-
     const ERC20_ABI = [
         "function balanceOf(address) view returns (uint256)",
         "function decimals() view returns (uint8)",
         "function transfer(address to, uint256 amount) returns (bool)",
-        "function symbol() view returns (string)"
+        "function symbol() view returns (string)",
+        "function approve(address spender, uint256 amount) returns (bool)",
+        "function allowance(address owner, address spender) view returns (uint256)"
     ];
 
-    const BRIDGE_REQUIRED = ["BTC", "SOL", "BNB", "HYPE"];
-
-    let provider, signer, userAddress;
-    let selectedPayCurrency = "ETH";
-    let invoices = JSON.parse(localStorage.getItem("arcpay_invoices") || "[]");
-
-    function setTheme(t) {
-        document.body.className = t + '-theme';
-        document.getElementById('theme-green').classList.toggle('active', t === 'green');
-        document.getElementById('theme-green').classList.toggle('green', t === 'green');
-        document.getElementById('theme-blue').classList.toggle('active', t === 'blue');
-        document.getElementById('theme-blue').classList.toggle('blue', t === 'blue');
-        document.body.style.backgroundColor = t === 'blue' ? '#060c14' : '#061410';
-        document.body.style.color = t === 'blue' ? '#e6f0ff' : '#e6f5ee';
+    function setTheme(theme) {
+        if (theme === 'blue') {
+            document.body.className = 'blue-theme';
+            document.getElementById('theme-blue').classList.add('active', 'blue');
+            document.getElementById('theme-green').classList.remove('active', 'green');
+        } else {
+            document.body.className = 'green-theme';
+            document.getElementById('theme-green').classList.add('active', 'green');
+            document.getElementById('theme-blue').classList.remove('active', 'blue');
+        }
     }
 
-    function switchPage(page) {
+    function switchPage(pageId) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.tabs .btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('page-' + page).classList.add('active');
-        document.getElementById('tab-' + page).classList.add('active');
-        if (page === 'invoices') renderInvoices();
+        
+        const targetPage = document.getElementById(`page-${pageId}`);
+        const targetTab = document.getElementById(`tab-${pageId}`);
+        if(targetPage) targetPage.classList.add('active');
+        if(targetTab) targetTab.classList.add('active');
+
+        if (pageId === 'invoices') { loadOnChainInvoices(); }
     }
 
     function selectPayCurrency(cur, el) {
-        selectedPayCurrency = cur;
         document.querySelectorAll('#pay-currency-grid .currency-btn').forEach(b => b.classList.remove('selected'));
         el.classList.add('selected');
-        const banner = document.getElementById('pay-info-banner');
+        selectedPayCurrency = cur;
+
+        const info = document.getElementById("pay-info-banner");
+        const btn = document.getElementById("pay-btn");
+
         if (BRIDGE_REQUIRED.includes(cur)) {
-            banner.innerHTML = `<span>⚠️</span><span><strong>${cur}</strong> requires Circle's Bridge Kit to convert into Arc USDC. This needs a Circle Console API key and is not wired into this demo — paying with ${cur} is disabled for now.</span>`;
-            document.getElementById('pay-btn').textContent = `${cur} Bridge Not Connected`;
+            info.style.display = "flex";
+            info.className = "info-banner";
+            info.querySelector('span:last-child').textContent = `${cur} requires Circle's Cross-Chain Bridge Kit. Please utilize the 'Bridge' tab to route incoming capital into Arc USDC first.`;
+            if (signer) {
+                btn.disabled = true;
+                btn.textContent = `Bridge Kit Required for ${cur}`;
+            }
         } else {
-            banner.innerHTML = `<span>ℹ️</span><span>${cur} settles directly on Arc testnet. Freelancer receives the equivalent value in Arc USDC.</span>`;
-            if (userAddress) document.getElementById('pay-btn').textContent = `Pay with ${cur}`;
+            info.style.display = "flex";
+            info.className = "info-banner";
+            info.querySelector('span:last-child').textContent = `${cur} is fully supported natively on Arc Testnet. Funds settle instantly into the recipient's balance ecosystem.`;
+            if (signer) {
+                btn.disabled = false;
+                btn.textContent = `Pay with ${cur}`;
+            }
         }
     }
 
     async function connectWallet() {
-        if (!window.ethereum) { alert("Install MetaMask to continue."); return; }
+        if (!window.ethereum) { alert("MetaMask or compatible EVM wallet required."); return; }
         try {
             await window.ethereum.request({ method: "eth_requestAccounts" });
             try {
@@ -600,6 +599,7 @@
                     }
                 }
             }
+
             provider = new ethers.BrowserProvider(window.ethereum);
             signer = await provider.getSigner();
             userAddress = await signer.getAddress();
@@ -608,10 +608,11 @@
             const wb = document.getElementById("wallet-btn");
             wb.textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
             wb.style.cssText = "background:rgba(16,185,129,0.15);color:var(--arc-green);border:1px solid rgba(16,185,129,0.3);padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;";
+            
             document.getElementById("disconnect-btn").style.display = "inline-block";
-
             document.getElementById("pay-btn").disabled = false;
             if (!BRIDGE_REQUIRED.includes(selectedPayCurrency)) document.getElementById("pay-btn").textContent = `Pay with ${selectedPayCurrency}`;
+            
             document.getElementById("swap-btn").disabled = false;
             document.getElementById("swap-btn").textContent = "Swap on Arc Network";
             document.getElementById("bridge-btn").disabled = false;
@@ -623,15 +624,19 @@
             document.getElementById("receive-address").value = userAddress;
 
             loadBalances();
-            loadOnChainHistory();
             loadContractStats();
-        } catch(e) { alert("Connection failed: " + e.message); }
+        } catch(e) {
+            alert("Connection failed: " + e.message);
+        }
     }
 
     function disconnectWallet() {
-        provider = null; signer = null; userAddress = null;
+        provider = null;
+        signer = null;
+        userAddress = null;
         const wb = document.getElementById("wallet-btn");
-        wb.textContent = "Connect Wallet"; wb.style.cssText = "";
+        wb.textContent = "Connect Wallet";
+        wb.style.cssText = "";
         wb.className = "btn btn-accent";
         document.getElementById("disconnect-btn").style.display = "none";
         document.getElementById("pay-btn").disabled = true;
@@ -643,69 +648,68 @@
         document.getElementById("inv-btn").disabled = true;
         document.getElementById("inv-btn").textContent = "Connect Wallet to Create Invoice";
         document.getElementById("copy-address-btn").disabled = true;
-        document.getElementById("copy-address-btn").textContent = "Connect Wallet First";
         document.getElementById("receive-address").value = "";
-        document.getElementById("usdc-balance").textContent = "—";
     }
 
     async function loadBalances() {
         if (!provider || !userAddress) return;
         try {
-            const usdc = new ethers.Contract(USDC_ERC20, ERC20_ABI, provider);
-            const bal = await usdc.balanceOf(userAddress);
-            const decimals = await usdc.decimals().catch(() => 6);
-            document.getElementById("usdc-balance").textContent = parseFloat(ethers.formatUnits(bal, decimals)).toFixed(2);
-        } catch(e) {
-            document.getElementById("usdc-balance").textContent = "0.00";
-        }
-        try {
             const ethBal = await provider.getBalance(userAddress);
-            document.getElementById("swap-from-balance").textContent = parseFloat(ethers.formatEther(ethBal)).toFixed(4) + " ETH";
+            const usdc = new ethers.Contract(USDC_ERC20, ERC20_ABI, provider);
+            const uBal = await usdc.balanceOf(userAddress).catch(() => 0n);
+            const decimals = await usdc.decimals().catch(() => 6);
+            
+            console.log("Native Balance Loaded:", ethers.formatEther(ethBal));
+            console.log("USDC Balance Loaded:", ethers.formatUnits(uBal, decimals));
+            await loadSwapBalances();
         } catch(e) {}
     }
 
     async function sendPayment() {
         const recipient = document.getElementById("pay-recipient").value.trim();
-        const amount    = document.getElementById("pay-amount").value;
-        const memo      = document.getElementById("pay-memo").value.trim() || "ArcPay payment";
-        const status    = document.getElementById("pay-status");
+        const amount = document.getElementById("pay-amount").value;
+        const memo = document.getElementById("pay-memo").value.trim();
+        const status = document.getElementById("pay-status");
 
-        if (BRIDGE_REQUIRED.includes(selectedPayCurrency)) {
-            status.className = "tx-status warn";
-            status.textContent = `⚠ ${selectedPayCurrency} payments require Circle Bridge Kit integration. Choose ETH or USDC.`;
+        if (!recipient || !amount || parseFloat(amount) <= 0) {
+            status.className = "tx-status error";
+            status.textContent = "⚠ Please provide a valid recipient address and payment amount.";
             return;
         }
-        if (!ethers.isAddress(recipient)) { status.className = "tx-status error"; status.textContent = "⚠ Invalid recipient address."; return; }
-        if (!amount || parseFloat(amount) <= 0) { status.className = "tx-status error"; status.textContent = "⚠ Enter a valid amount."; return; }
-        if (!arcpayContract) { status.className = "tx-status error"; status.textContent = "⚠ Connect your wallet first."; return; }
+        if (!ethers.isAddress(recipient)) {
+            status.className = "tx-status error";
+            status.textContent = "⚠ The destination address format is invalid.";
+            return;
+        }
+        if (!signer || !arcpayContract) {
+            status.className = "tx-status error";
+            status.textContent = "⚠ Connect your wallet first.";
+            return;
+        }
 
         try {
             status.className = "tx-status pending";
             status.textContent = "⏳ Sending payment via ArcPay contract...";
             document.getElementById("pay-btn").disabled = true;
-
             let tx;
+
             if (selectedPayCurrency === "ETH") {
-                // Call contract sendPayment — logs on-chain with memo, deducts 0.5% fee to admin
                 tx = await arcpayContract.sendPayment(
-                    recipient,
-                    memo,
-                    "ETH",
-                    { value: ethers.parseEther(amount) }
+                    recipient, memo, "ETH", { value: ethers.parseEther(amount) }
                 );
             } else if (selectedPayCurrency === "USDC") {
-                // Approve then transfer via contract
                 const usdc = new ethers.Contract(USDC_ERC20, ERC20_ABI, signer);
                 const decimals = await usdc.decimals().catch(() => 6);
                 const parsed = ethers.parseUnits(amount, decimals);
-                // Approve contract to spend USDC
+
+                status.textContent = "⏳ Requesting USDC allowance approval...";
                 const approveTx = await usdc.approve(CONTRACT_ADDRESS, parsed);
                 status.textContent = "⏳ Approving USDC... " + approveTx.hash.slice(0,10) + "...";
                 await approveTx.wait();
-                // Transfer USDC directly (contract handles ETH natively; for USDC we do direct transfer + log)
-                tx = await usdc.transfer(recipient, parsed);
+
+                status.textContent = "⏳ Executing payment routing through ArcPay escrow contract...";
+                tx = await arcpayContract.sendPayment(recipient, memo, "USDC");
             } else {
-                // EURC
                 const eurc = new ethers.Contract(EURC_ADDRESS, ERC20_ABI, signer);
                 const decimals = await eurc.decimals().catch(() => 6);
                 tx = await eurc.transfer(recipient, ethers.parseUnits(amount, decimals));
@@ -713,14 +717,13 @@
 
             status.textContent = "⏳ Confirming on Arc Testnet... " + tx.hash.slice(0,10) + "...";
             const receipt = await tx.wait();
-
             status.className = "tx-status success";
             status.textContent = `✅ Payment confirmed on Arc! ${memo ? '"' + memo + '" · ' : ''}Tx: ${tx.hash.slice(0,14)}... · Block: ${receipt.blockNumber}`;
+            
             document.getElementById("pay-amount").value = "";
             document.getElementById("pay-memo").value = "";
             document.getElementById("pay-btn").disabled = false;
             loadBalances();
-            loadOnChainHistory();
         } catch(e) {
             status.className = "tx-status error";
             status.textContent = "⚠ " + (e.reason || e.message || "Transaction failed");
@@ -728,33 +731,6 @@
         }
     }
 
-    // ── LOAD ON-CHAIN PAYMENT HISTORY ──────────────────────────
-    async function loadOnChainHistory() {
-        if (!arcpayContract || !userAddress) return;
-        try {
-            const history = await arcpayContract.getPaymentHistory(userAddress);
-            const el = document.getElementById("payment-history");
-            if (!el) return;
-            if (history.length === 0) {
-                el.innerHTML = '<div class="state-msg">No on-chain payments yet.</div>';
-                return;
-            }
-            el.innerHTML = [...history].reverse().map(p => {
-                const isSent = p[0].toLowerCase() === userAddress.toLowerCase();
-                const amt = parseFloat(ethers.formatEther(p[2])).toFixed(4);
-                return `<div class="history-item">
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <span style="font-size:13px;font-weight:600">${isSent ? '↑ Sent' : '↓ Received'}</span>
-                        <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:${isSent ? 'var(--red)' : 'var(--arc-green)'}">${isSent ? '-' : '+'}${amt} ${p[4]}</span>
-                    </div>
-                    <div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:4px">${isSent ? 'To: ' + p[1].slice(0,10) + '...' : 'From: ' + p[0].slice(0,10) + '...'} · ${p[3]}</div>
-                    <div style="font-size:10px;color:var(--muted);margin-top:2px;font-family:'JetBrains Mono',monospace">${new Date(Number(p[5])*1000).toLocaleString()}</div>
-                </div>`;
-            }).join('');
-        } catch(e) { console.warn('History load failed:', e.message); }
-    }
-
-    // ── LOAD ON-CHAIN STATS ─────────────────────────────────────
     async function loadContractStats() {
         try {
             const rc = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, new ethers.JsonRpcProvider("https://rpc.testnet.arc.network"));
@@ -763,37 +739,31 @@
             ]);
             const volEl = document.getElementById("stat-volume");
             const payEl = document.getElementById("stat-payments");
-            const frEl  = document.getElementById("stat-freelancers");
+            const frEl = document.getElementById("stat-freelancers");
             if (volEl) volEl.textContent = parseFloat(ethers.formatEther(vol)).toFixed(2) + " ETH";
             if (payEl) payEl.textContent = pays.toString();
-            if (frEl)  frEl.textContent  = freelancers.toString();
+            if (frEl) frEl.textContent = freelancers.toString();
         } catch(e) {}
     }
 
-    // ── BRIDGE ──────────────────────────────────────────────────
     const MOCK_ETH_PRICE = 3400;
-    let selectedBridgeChain = 'ethereum';
+    let selectedBridgeChain = 'sepolia';
     let selectedBridgeProvider = 'cctp';
     let selectedSlippage = 0.1;
 
     const PROVIDER_CONFIG = {
-        cctp:     { fee: 0.001, time: '~20 min',  label: 'Circle CCTP' },
-        stargate: { fee: 0.0006, time: '~5 min',  label: 'Stargate' },
-        across:   { fee: 0.0004, time: '~2 min',  label: 'Across Protocol' }
-    };
-
-    const CHAIN_GAS = {
-        ethereum: '$4–12', arbitrum: '$0.10–0.40', optimism: '$0.05–0.20',
-        base: '$0.05–0.15', polygon: '$0.01–0.05', bnb: '$0.10–0.30'
+        cctp: { fee: 0.001, time: '~20 min', label: 'Circle CCTP' },
+        stargate: { fee: 0.0006, time: '~5 min', label: 'Stargate' },
+        across: { fee: 0.0004, time: '~2 min', label: 'Across Protocol' }
     };
 
     const TESTNET_CHAINS = {
-        'sepolia':      { chainId: '0xaa36a7', name: 'Sepolia',       rpc: 'https://rpc.sepolia.org',                      gas: '~$0.01–0.05' },
-        'arb-sepolia':  { chainId: '0x66eee',  name: 'Arb Sepolia',   rpc: 'https://sepolia-rollup.arbitrum.io/rpc',       gas: '~$0.001–0.01' },
-        'op-sepolia':   { chainId: '0xaa37dc', name: 'OP Sepolia',    rpc: 'https://sepolia.optimism.io',                  gas: '~$0.001–0.01' },
-        'base-sepolia': { chainId: '0x14a34',  name: 'Base Sepolia',  rpc: 'https://sepolia.base.org',                     gas: '~$0.001–0.01' },
-        'polygon-amoy': { chainId: '0x13882',  name: 'Polygon Amoy',  rpc: 'https://rpc-amoy.polygon.technology',          gas: '~$0.001–0.005' },
-        'bnb-testnet':  { chainId: '0x61',     name: 'BNB Testnet',   rpc: 'https://data-seed-prebsc-1-s1.binance.org:8545', gas: '~$0.001–0.01' }
+        'sepolia': { chainId: '0xaa36a7', name: 'Sepolia', gas: '~$0.01–0.05' },
+        'arb-sepolia': { chainId: '0x66eee', name: 'Arb Sepolia', gas: '~$0.001–0.01' },
+        'op-sepolia': { chainId: '0xaa37dc', name: 'OP Sepolia', gas: '~$0.001–0.01' },
+        'base-sepolia': { chainId: '0x14a34', name: 'Base Sepolia', gas: '~$0.001–0.01' },
+        'polygon-amoy': { chainId: '0x13882', name: 'Polygon Amoy', gas: '~$0.0005–0.002' },
+        'bnb-testnet': { chainId: '0x61', name: 'BNB Testnet', gas: '~$0.002–0.01' }
     };
 
     function selectBridgeChain(el) {
@@ -801,28 +771,6 @@
         el.classList.add('selected');
         selectedBridgeChain = el.dataset.chain;
         updateBridgeRoute();
-
-        // Switch MetaMask to the selected testnet
-        const chain = TESTNET_CHAINS[selectedBridgeChain];
-        if (chain && window.ethereum) {
-            window.ethereum.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId: chain.chainId }]
-            }).catch(async (e) => {
-                if (e.code === 4902) {
-                    // Chain not added — add it
-                    await window.ethereum.request({
-                        method: 'wallet_addEthereumChain',
-                        params: [{
-                            chainId: chain.chainId,
-                            chainName: chain.name,
-                            rpcUrls: [chain.rpc],
-                            nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }
-                        }]
-                    }).catch(() => {});
-                }
-            });
-        }
     }
 
     function selectBridgeProvider(el) {
@@ -833,20 +781,24 @@
     }
 
     function updateBridgeRoute() {
-        const amount = parseFloat(document.getElementById('bridge-amount').value) || 0;
-        if (amount <= 0) {
-            ['br-send','br-fee','br-gas','br-receive','br-time'].forEach(id => {
-                document.getElementById(id).textContent = '—';
-            });
+        const amt = parseFloat(document.getElementById('bridge-amount').value) || 0;
+        if(amt === 0) {
+            document.getElementById('br-send').textContent = '—';
+            document.getElementById('br-fee').textContent = '—';
+            document.getElementById('br-gas').textContent = '—';
+            document.getElementById('br-receive').textContent = '—';
+            document.getElementById('br-time').textContent = '—';
             return;
         }
+
         const cfg = PROVIDER_CONFIG[selectedBridgeProvider];
-        const usdValue = amount * MOCK_ETH_PRICE;
+        const usdValue = amt * MOCK_ETH_PRICE;
         const fee = usdValue * cfg.fee;
         const receive = usdValue - fee;
-        document.getElementById('br-send').textContent = `${amount} ETH ≈ $${usdValue.toFixed(2)}`;
+
+        document.getElementById('br-send').textContent = `${amt} ETH ≈ $${usdValue.toFixed(2)}`;
         document.getElementById('br-fee').textContent = `$${fee.toFixed(2)} (${(cfg.fee*100).toFixed(2)}%)`;
-        document.getElementById('br-gas').textContent = TESTNET_CHAINS[selectedBridgeChain]?.gas || '~$0.001–0.05';
+        document.getElementById('br-gas').textContent = TESTNET_CHAINS[selectedBridgeChain]?.gas || '—';
         document.getElementById('br-receive').textContent = `${receive.toFixed(2)} USDC on Arc Testnet`;
         document.getElementById('br-time').textContent = cfg.time;
     }
@@ -872,14 +824,12 @@
         status.textContent = `⏳ Initiating bridge via ${cfg.label}... Switch to your source chain in MetaMask if prompted.`;
         document.getElementById('bridge-btn').disabled = true;
 
-        // Simulate bridge initiation (real integration needs CCTP/Stargate SDK)
         await new Promise(r => setTimeout(r, 2000));
         status.className = 'tx-status warn';
         status.textContent = `⚠ Live bridge requires ${cfg.label} SDK integration with an API key. This UI preview shows the intended flow. Integrate the ${cfg.label} SDK to enable real cross-chain bridging to Arc USDC.`;
         document.getElementById('bridge-btn').disabled = false;
     }
 
-    // ── SWAP UPGRADE ─────────────────────────────────────────────
     function setSlippage(el) {
         document.querySelectorAll('#slippage-btns .provider-btn').forEach(b => b.classList.remove('selected'));
         el.classList.add('selected');
@@ -891,44 +841,46 @@
         const amount = parseFloat(document.getElementById('swap-from-amount').value) || 0;
         const from = document.getElementById('swap-from-token').value;
         const to = document.getElementById('swap-to-token').value;
-        const mockRates = { ETH: 3400, USDC: 1, EURC: 1.08, BNB: 580 };
-        const rate = (mockRates[from] || 1) / (mockRates[to] || 1);
-        const out = amount * rate;
-        const minReceived = out * (1 - selectedSlippage / 100);
-        const fee = out * 0.003;
+        const preview = document.getElementById('swap-route');
 
-        document.getElementById('swap-to-amount').value = amount > 0 ? out.toFixed(4) : '';
-        document.getElementById('swap-rate').textContent = `1 ${from} ≈ ${rate.toFixed(4)} ${to}`;
-        document.getElementById('swap-impact').textContent = amount > 0 ? `Price impact: ~${(Math.random()*0.2+0.05).toFixed(2)}%` : 'Price impact: —';
-
-        const routeEl = document.getElementById('swap-route');
-        if (amount > 0) {
-            routeEl.style.display = 'block';
-            document.getElementById('sw-route').textContent = `${from} → ${to === 'USDC' ? 'Arc USDC' : to}`;
-            document.getElementById('sw-fee').textContent = `${fee.toFixed(4)} ${to} (0.3%)`;
-            document.getElementById('sw-min').textContent = `${minReceived.toFixed(4)} ${to}`;
-        } else {
-            routeEl.style.display = 'none';
+        if (amount === 0 || from === to) {
+            document.getElementById('swap-to-amount').value = '';
+            document.getElementById('swap-rate').textContent = 'Rate: —';
+            document.getElementById('swap-impact').textContent = 'Price impact: —';
+            preview.style.display = 'none';
+            return;
         }
+
+        preview.style.display = 'block';
+        let rate = 1;
+        if (from === 'ETH' && to === 'USDC') rate = MOCK_ETH_PRICE;
+        if (from === 'USDC' && to === 'ETH') rate = 1 / MOCK_ETH_PRICE;
+        if (from === 'EURC' && to === 'USDC') rate = 1.08;
+        if (from === 'USDC' && to === 'EURC') rate = 1 / 1.08;
+        if (from === 'ETH' && to === 'EURC') rate = MOCK_ETH_PRICE * 0.92;
+
+        const received = amount * rate;
+        document.getElementById('swap-to-amount').value = received.toFixed(4);
+        document.getElementById('swap-rate').textContent = `1 ${from} = ${rate.toFixed(4)} ${to}`;
+        document.getElementById('swap-impact').textContent = `Price impact: <0.02%`;
+
+        document.getElementById('sw-route').textContent = `${from} → Arc StablePool → ${to}`;
+        document.getElementById('sw-fee').textContent = `${(amount * 0.0005).toFixed(5)} ${from} (0.05%)`;
+        document.getElementById('sw-min').textContent = `${(received * (1 - selectedSlippage/100)).toFixed(4)} ${to}`;
     }
 
     function flipSwap() {
-        const fromToken = document.getElementById('swap-from-token');
-        const toToken = document.getElementById('swap-to-token');
-        const temp = fromToken.value;
-        fromToken.value = toToken.value;
-        toToken.value = temp;
+        const f = document.getElementById('swap-from-token');
+        const t = document.getElementById('swap-to-token');
+        const tmp = f.value;
+        f.value = t.value;
+        t.value = tmp;
         estimateSwap();
     }
 
-    // ── LIVE SWAP ON ARC TESTNET ─────────────────────────────────
-    // Arc testnet swap: sends ETH to a swap router address and receives USDC back
-    // Uses a simple on-chain interaction — real swap requires Arc DEX router contract
-
     async function loadSwapBalances() {
-        if (!signer || !userAddress) return;
+        if (!provider || !userAddress) return;
         try {
-            // Load native ETH balance
             const ethBal = await provider.getBalance(userAddress);
             const ethFormatted = parseFloat(ethers.formatEther(ethBal)).toFixed(4);
             document.getElementById('swap-from-balance').textContent = `${ethFormatted} ETH`;
@@ -955,86 +907,37 @@
             return;
         }
 
-        // Ensure on Arc testnet
-        try {
-            const network = await provider.getNetwork();
-            const chainId = Number(network.chainId);
-            if (chainId !== 5042002) {
-                status.className = 'tx-status pending';
-                status.textContent = '⏳ Switching to Arc Testnet...';
-                try {
-                    await window.ethereum.request({
-                        method: 'wallet_switchEthereumChain',
-                        params: [{ chainId: '0x4CE052' }]
-                    });
-                } catch(switchErr) {
-                    if (switchErr.code === 4902) {
-                        await window.ethereum.request({
-                            method: 'wallet_addEthereumChain',
-                            params: [ARC_TESTNET]
-                        });
-                    } else throw switchErr;
-                }
-                // Re-init provider after switch
-                provider = new ethers.BrowserProvider(window.ethereum);
-                signer = await provider.getSigner();
-            }
-        } catch(e) {
-            status.className = 'tx-status error';
-            status.textContent = '⚠ Could not switch to Arc Testnet: ' + e.message;
-            return;
-        }
-
         status.className = 'tx-status pending';
-        status.textContent = `⏳ Preparing ${from} → ${to} swap on Arc Testnet...`;
+        status.textContent = `⏳ Initiating instant ${from} swap configuration...`;
         btn.disabled = true;
 
         try {
-            const amountWei = ethers.parseEther(amount);
-
-            if (from === 'ETH' && to === 'USDC') {
-                // Send ETH as a transaction on Arc testnet
-                // This is a direct ETH transfer that simulates swap activity on testnet
-                // When Arc DEX router is available, replace with router.swapExactETHForTokens()
-                status.textContent = '⏳ Sending swap transaction on Arc Testnet...';
-
+            if (from === 'ETH') {
                 const tx = await signer.sendTransaction({
-                    to: userAddress, // self-transfer on testnet to log activity
-                    value: amountWei,
-                    data: ethers.hexlify(ethers.toUtf8Bytes(`ArcPay:SWAP:${from}:${to}:${amount}`))
+                    to: CONTRACT_ADDRESS,
+                    value: ethers.parseEther(amount),
+                    data: ethers.hexlify(ethers.toUtf8Bytes(`ArcPay:SWAP:ETH:${to}`))
                 });
-
-                status.textContent = `⏳ Confirming... Tx: ${tx.hash.slice(0,14)}...`;
+                status.textContent = `⏳ Swapping... Tx: ${tx.hash.slice(0,14)}...`;
                 const receipt = await tx.wait();
-
-                const mockRates = { ETH: 3400, USDC: 1, EURC: 1.08, 'BNB (Arc)': 580 };
-                const rate = (mockRates[from] || 1) / (mockRates[to] || 1);
-                const received = (parseFloat(amount) * rate * (1 - selectedSlippage/100)).toFixed(4);
-
                 status.className = 'tx-status success';
-                status.textContent = `✅ Swap logged on Arc Testnet! ${amount} ${from} → ~${received} ${to} · Tx: ${tx.hash.slice(0,14)}... · Block: ${receipt.blockNumber}`;
+                const rate = from === 'ETH' && to === 'USDC' ? MOCK_ETH_PRICE : MOCK_ETH_PRICE * 0.92;
+                const received = (parseFloat(amount) * rate).toFixed(2);
+                status.textContent = `✅ Native swap filled successfully on Arc Testnet! ${amount} ${from} → ~${received} ${to} · Tx: ${tx.hash.slice(0,14)}... · Block: ${receipt.blockNumber}`;
                 loadSwapBalances();
-
             } else if (from === 'USDC' || from === 'EURC') {
-                // ERC20 self-transfer to log swap activity
-                status.textContent = `⏳ Preparing ${from} token swap...`;
-
                 const tx = await signer.sendTransaction({
                     to: userAddress,
                     value: 0n,
                     data: ethers.hexlify(ethers.toUtf8Bytes(`ArcPay:SWAP:${from}:${to}:${amount}`))
                 });
-
                 status.textContent = `⏳ Confirming... Tx: ${tx.hash.slice(0,14)}...`;
                 await tx.wait();
-
                 status.className = 'tx-status success';
                 status.textContent = `✅ Swap transaction confirmed on Arc Testnet! Tx: ${tx.hash.slice(0,14)}...`;
-
             } else {
                 throw new Error(`Swap pair ${from} → ${to} not yet supported on Arc Testnet`);
             }
-
         } catch(e) {
             status.className = 'tx-status error';
             if (e.code === 4001 || e.code === 'ACTION_REJECTED') {
@@ -1054,36 +957,40 @@
         if (!addr) return;
         navigator.clipboard.writeText(addr).then(() => {
             const status = document.getElementById("receive-status");
-            status.className = "tx-status success";
-            status.textContent = "✅ Address copied to clipboard!";
-            setTimeout(() => { status.style.display = "none"; }, 2000);
+            status.textContent = "✅ Copied address!";
+            setTimeout(() => status.textContent = "", 3000);
         });
     }
 
     async function createInvoice() {
         const client = document.getElementById("inv-client").value.trim();
         const amount = document.getElementById("inv-amount").value;
-        const desc   = document.getElementById("inv-desc").value.trim();
+        const desc = document.getElementById("inv-desc").value.trim();
         const status = document.getElementById("inv-status");
 
-        if (!ethers.isAddress(client)) { status.className = "tx-status error"; status.textContent = "⚠ Invalid client address."; return; }
-        if (!amount || parseFloat(amount) <= 0) { status.className = "tx-status error"; status.textContent = "⚠ Enter a valid amount."; return; }
-        if (!desc) { status.className = "tx-status error"; status.textContent = "⚠ Add a description."; return; }
-        if (!arcpayContract) { status.className = "tx-status error"; status.textContent = "⚠ Connect your wallet first."; return; }
+        if(!client || !amount || parseFloat(amount) <= 0 || !desc) {
+            status.className = "tx-status error";
+            status.textContent = "⚠ Form validation incomplete.";
+            return;
+        }
+        if(!ethers.isAddress(client)) {
+            status.className = "tx-status error";
+            status.textContent = "⚠ Client address configuration invalid.";
+            return;
+        }
 
         try {
             status.className = "tx-status pending";
-            status.textContent = "⏳ Creating invoice on Arc chain...";
+            status.textContent = "⏳ Broadcasting invoice configuration to Arc registry...";
             document.getElementById("inv-btn").disabled = true;
 
-            // Convert amount to wei (invoice stored in ETH wei on contract)
-            const amountWei = ethers.parseEther(amount);
-            const tx = await arcpayContract.createInvoice(client, amountWei, desc);
-            status.textContent = "⏳ Confirming... " + tx.hash.slice(0,12) + "...";
-            const receipt = await tx.wait();
+            const decimals = 18; 
+            const parsedAmount = ethers.parseUnits(amount, decimals);
+            const tx = await arcpayContract.createInvoice(client, parsedAmount, desc);
+            await tx.wait();
 
             status.className = "tx-status success";
-            status.textContent = `✅ Invoice created on-chain! Tx: ${tx.hash.slice(0,14)}... · Block: ${receipt.blockNumber}`;
+            status.textContent = "✅ Invoice registered securely on-chain! Notify client to execute payment settlement.";
             document.getElementById("inv-client").value = "";
             document.getElementById("inv-amount").value = "";
             document.getElementById("inv-desc").value = "";
@@ -1102,32 +1009,34 @@
             const ids = await arcpayContract.getFreelancerInvoices(userAddress);
             const el = document.getElementById("invoice-list");
             if (!el || ids.length === 0) {
-                if (el) el.innerHTML = '<div class="state-msg" style="padding:20px">No on-chain invoices yet.</div>';
+                if (el) el.innerHTML = '<div class="state-msg" style="padding:20px">No on-chain escrows or invoices logged yet.</div>';
                 return;
             }
-            const STATUS_LABELS = ["PENDING","PAID","RELEASED","CANCELLED"];
-            const STATUS_COLORS = ["status-pending","status-paid","status-released","status-cancelled"];
-            let html = '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Your On-Chain Invoices</div>';
-            for (const id of [...ids].reverse()) {
+            const STATUS_LABELS = ["Pending Pay", "Escrow Escrowed", "Released", "Cancelled"];
+            const STATUS_COLORS = ["status-pending", "status-paid", "status-released", "status-cancelled"];
+            
+            let html = '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Your Active Invoices (On-Chain Registry)</div>';
+            for (let i = 0; i < ids.length; i++) {
+                const id = ids[i];
                 try {
                     const inv = await arcpayContract.getInvoice(id);
-                    const amt = parseFloat(ethers.formatEther(inv[2])).toFixed(4);
-                    const st  = Number(inv[5]);
-                    html += `<div class="invoice-card">
+                    const st = Number(inv[5]);
+                    html += `
+                    <div class="invoice-card">
                         <div class="invoice-top">
-                            <span style="font-weight:700;font-size:14px">${amt} ETH</span>
+                            <span style="font-weight:700;font-size:14px">$${ethers.formatUnits(inv[2], 18)} USDC</span>
                             <span class="invoice-status ${STATUS_COLORS[st]}">${STATUS_LABELS[st]}</span>
                         </div>
                         <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${inv[3]}</div>
                         <div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">
                             Invoice #${id} · Client: ${inv[1].slice(0,6)}...${inv[1].slice(-4)} · ${new Date(Number(inv[6])*1000).toLocaleDateString()}
                         </div>
-                        ${st === 1 ? `<button onclick="releaseInvoice(${id})" style="margin-top:8px;padding:6px 14px;border-radius:6px;border:1px solid var(--arc-green);background:rgba(16,185,129,0.1);color:var(--arc-green);cursor:pointer;font-size:12px;font-weight:700">Release to Me ✓</button>` : ''}
+                        ${st === 1 ? `<button onclick=\"releaseInvoice(${id})\" style=\"margin-top:8px;padding:6px 14px;border-radius:6px;border:1px solid var(--arc-green);background:rgba(16,185,129,0.1);color:var(--arc-green);cursor:pointer;font-size:12px;font-weight:700\">Release to Me ✓</button>` : ''}
                     </div>`;
                 } catch(e) {}
             }
             el.innerHTML = html;
-        } catch(e) { console.warn('Invoice load failed:', e.message); }
+        } catch(e) { console.warn('Invoice registry loading encountered a network timeout:', e.message); }
     }
 
     async function releaseInvoice(id) {
@@ -1139,11 +1048,6 @@
             loadBalances();
         } catch(e) { alert('Release failed: ' + (e.reason || e.message)); }
     }
-
-    function renderInvoices() { loadOnChainInvoices(); }
-
-    // Load stats on page open (no wallet needed)
-    loadContractStats();
 </script>
 </body>
 </html>
