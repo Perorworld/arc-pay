@@ -386,8 +386,8 @@
     const USDC_ERC20 = "0x3600000000000000000000000000000000000000"; // Arc Testnet USDC system contract
     const EURC_ADDRESS = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a";
 
-    // ── LIVE SWAP ROUTER CONFIG (Uniswap V2 / standard DEX Template) ────────────────
-    const DEX_ROUTER_ADDRESS = "0x534B2EbAF69bE1e06277D6F8fF4125f1591bc7A1"; // Your Live Arc DEX Router Address
+    // ── LIVE SWAP ROUTER CONFIG ───────────────────────────────────
+    const DEX_ROUTER_ADDRESS = "0x534B2EbAF69bE1e06277D6F8fF4125f1591bc7A1"; 
     const DEX_ROUTER_ABI = [
         "function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)",
         "function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts)"
@@ -565,7 +565,7 @@
         }
     }
 
-    // ── ESTIMATE REAL SWAP (On-Chain Liquidity Quote) ───────────────────────
+    // ── ESTIMATE REAL SWAP (With On-Chain Failure Interception) ────────────
     async function estimateRealSwap() {
         const amountInput = document.getElementById('swap-from-amount').value.trim();
         const fromTokenSymbol = document.getElementById('swap-from-token').value;
@@ -600,7 +600,6 @@
             const amountInWei = ethers.parseUnits(amountInput, fromDecimals);
             const path = [fromTokenAddress, toTokenAddress];
 
-            // Real lookup from DEX liquidity reserves
             const amountsOut = await routerContract.getAmountsOut(amountInWei, path);
             const expectedOutputWei = amountsOut[1];
 
@@ -611,7 +610,6 @@
             const minReceivedWei = (BigInt(expectedOutputWei) * BigInt(Math.floor(slippageMultiplier * 10000))) / 10000n;
             const formattedMin = ethers.formatUnits(minReceivedWei, toDecimals);
 
-            // Fetch live rate for display
             const conversionRate = parseFloat(formattedOutput) / parseFloat(amountInput);
             document.getElementById('swap-rate').textContent = `1 ${fromTokenSymbol} = ${conversionRate.toFixed(4)} ${toTokenSymbol}`;
 
@@ -621,8 +619,8 @@
             document.getElementById('sw-min').textContent = `${parseFloat(formattedMin).toFixed(4)} ${toTokenSymbol}`;
 
         } catch (err) {
-            console.error("Quote estimation failed:", err);
-            document.getElementById('swap-rate').textContent = "No pool liquidity reserves found";
+            console.warn("Quote estimation failed:", err);
+            document.getElementById('swap-rate').textContent = "No active pool reserves found on router.";
             document.getElementById('swap-to-amount').value = '';
             document.getElementById('swap-route').style.display = 'none';
         }
@@ -660,7 +658,7 @@
         estimateRealSwap();
     }
 
-    // ── DO SWAP (Execute Real Swap On-Chain) ───────────────────────────
+    // ── DO SWAP (With Robust Error Parsing) ───────────────────────────
     async function doSwap() {
         const status = document.getElementById('swap-status');
         const btn = document.getElementById('swap-btn');
@@ -696,7 +694,7 @@
             const routerContract = new ethers.Contract(DEX_ROUTER_ADDRESS, DEX_ROUTER_ABI, signer);
 
             const fromDecimals = await fromContract.decimals();
-            const toDecimals = await fromContract.decimals();
+            const toDecimals = await toContract.decimals();
             const amountInWei = ethers.parseUnits(amountInput, fromDecimals);
 
             // Step A: Auto-Approval Flow
@@ -714,9 +712,14 @@
             // Step B: Fetch Live Swap Quote & Slippage Limits
             status.textContent = `⏳ Confirming final on-chain pool pricing...`;
             const path = [fromTokenAddress, toTokenAddress];
-            const amountsOut = await routerContract.getAmountsOut(amountInWei, path);
+            let amountsOut;
+            try {
+                amountsOut = await routerContract.getAmountsOut(amountInWei, path);
+            } catch (quoteErr) {
+                throw new Error("No active liquidity pool has been initialized for this pair on the DEX Router contract yet.");
+            }
+            
             const expectedOutputWei = amountsOut[1];
-
             const slippageMultiplier = 1 - (selectedSlippage / 100);
             const minAmountOutWei = (BigInt(expectedOutputWei) * BigInt(Math.floor(slippageMultiplier * 10000))) / 10000n;
 
@@ -748,7 +751,16 @@
         } catch (err) {
             status.className = 'tx-status error';
             console.error(err);
-            status.textContent = `⚠ Swap failed: ${err.reason || err.message || "Unknown error occurred"}`;
+            
+            // Decodes the exact RPC error return data
+            let friendlyError = err.reason || err.message || "Unknown error occurred";
+            if (err.data && typeof err.data === "string") {
+                friendlyError += ` (Contract Reverted: ${err.data})`;
+            } else if (err.info && err.info.error && err.info.error.message) {
+                friendlyError = err.info.error.message;
+            }
+            
+            status.textContent = `⚠ Swap failed: ${friendlyError}`;
         } finally {
             btn.disabled = false;
         }
