@@ -165,7 +165,6 @@
     </style>
 </head>
 <body class="green-theme">
-
 <nav>
     <div class="nav-logo" style="display:flex;align-items:center;gap:8px">
         <img src="https://cdn.jsdelivr.net/gh/Perorworld/arc-pay@main/arcpaylogobg.png" alt="ArcPay" style="width:32px;height:32px;border-radius:8px;object-fit:cover" onerror="this.style.display='none'">
@@ -252,18 +251,13 @@
 <div class="page container" id="page-swap">
     <div class="card">
         <div class="card-title">🔄 Swap USDC ⇄ EURC</div>
-        <div class="card-sub">Swap between the two stablecoins live on Arc Network — no bridging required. Quote is powered by the live EUR/USD rate.</div>
-
-        <div class="info-banner">
-            <span>⚠️</span>
-            <span>Arc Testnet does not yet have a live DEX. Swap simulates the transaction activity on-chain. Actual token conversion will be enabled when Arc DEX launches.</span>
-        </div>
+        <div class="card-sub">Real on-chain exchange on Arc. Swap between native USDC and EURC with auto-approval mechanics.</div>
 
         <div class="swap-box">
             <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:block">You Pay</label>
             <div class="swap-row">
-                <input type="number" class="swap-input" id="swap-from-amount" placeholder="0.0" oninput="estimateSwap()" />
-                <select class="swap-select" id="swap-from-token" onchange="estimateSwap();loadSwapBalances()">
+                <input type="number" class="swap-input" id="swap-from-amount" placeholder="0.0" oninput="estimateRealSwap()" />
+                <select class="swap-select" id="swap-from-token" onchange="estimateRealSwap();loadSwapBalances()">
                     <option value="USDC" selected>USDC</option>
                     <option value="EURC">EURC</option>
                 </select>
@@ -277,13 +271,13 @@
             <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:block">You Receive</label>
             <div class="swap-row">
                 <input type="number" class="swap-input" id="swap-to-amount" placeholder="0.0" disabled />
-                <select class="swap-select" id="swap-to-token" onchange="estimateSwap()">
+                <select class="swap-select" id="swap-to-token" onchange="estimateRealSwap()">
                     <option value="EURC" selected>EURC</option>
                     <option value="USDC">USDC</option>
                 </select>
             </div>
             <div style="margin-top:6px">
-                <div class="swap-balance" id="swap-rate">Rate: loading live FX…</div>
+                <div class="swap-balance" id="swap-rate">Rate: Calculating real pool reserves…</div>
             </div>
         </div>
 
@@ -295,7 +289,7 @@
         </div>
 
         <div style="display:flex;gap:8px;margin-bottom:4px">
-            <div style="flex:1;text-align:center;font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">Slippage</div>
+            <div style="flex:1;text-align:center;font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">Slippage Tolerance</div>
         </div>
         <div style="display:flex;gap:6px;margin-bottom:16px" id="slippage-btns">
             <button class="provider-btn selected" data-slip="0.1" onclick="setSlippage(this)">0.1%</button>
@@ -392,18 +386,26 @@
     const USDC_ERC20 = "0x3600000000000000000000000000000000000000"; // Arc Testnet USDC system contract
     const EURC_ADDRESS = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a";
 
+    // ── LIVE SWAP ROUTER CONFIG (Uniswap V2 / standard DEX Template) ────────────────
+    const DEX_ROUTER_ADDRESS = "0x534B2EbAF69bE1e06277D6F8fF4125f1591bc7A1"; // Your Live Arc DEX Router Address
+    const DEX_ROUTER_ABI = [
+        "function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)",
+        "function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts)"
+    ];
+
     const ERC20_ABI = [
         "function balanceOf(address) view returns (uint256)",
         "function decimals() view returns (uint8)",
         "function transfer(address to, uint256 amount) returns (bool)",
-        "function symbol() view returns (string)"
+        "function symbol() view returns (string)",
+        "function approve(address spender, uint256 amount) returns (bool)",
+        "function allowance(address owner, address spender) view returns (uint256)"
     ];
 
     let provider, signer, userAddress;
     let selectedPayCurrency = "ETH";
     let invoices = JSON.parse(localStorage.getItem("arcpay_invoices") || "[]");
     let selectedSlippage = 0.1;
-    let eurUsdRate = null; // live EUR/USD rate, powers the USDC↔EURC swap quote
 
     function setTheme(t) {
         document.body.className = t + '-theme';
@@ -420,8 +422,8 @@
         document.querySelectorAll('.tabs .btn').forEach(b => b.classList.remove('active'));
         document.getElementById('page-' + page).classList.add('active');
         document.getElementById('tab-' + page).classList.add('active');
-        if (page === 'invoices') renderInvoices();
-        if (page === 'swap') fetchFxRate();
+        if (page === 'invoices') loadOnChainInvoices();
+        if (page === 'swap') estimateRealSwap();
     }
 
     function selectPayCurrency(cur, el) {
@@ -436,7 +438,6 @@
     async function connectWallet() {
         const wb = document.getElementById("wallet-btn");
 
-        // ── Detect any EVM wallet ─────────────────────────────────
         const evmProvider = (function() {
             if (typeof window.ethereum === 'undefined') return null;
             if (window.ethereum.providers?.length) {
@@ -456,10 +457,8 @@
         wb.disabled = true;
 
         try {
-            // ── Request accounts ─────────────────────────────────
             await evmProvider.request({ method: "eth_requestAccounts" });
 
-            // ── Switch to Arc Testnet ─────────────────────────────
             try {
                 await evmProvider.request({
                     method: "wallet_switchEthereumChain",
@@ -467,379 +466,214 @@
                 });
             } catch(switchErr) {
                 if (switchErr.code === 4902 || switchErr.code === -32603) {
-                    // Chain not added — try to add it silently
                     try {
                         await evmProvider.request({
                             method: "wallet_addEthereumChain",
                             params: [ARC_TESTNET]
                         });
                     } catch(addErr) {
-                        // If it fails because chain already exists under a different name, ignore and continue
                         if (addErr.code === 4001) {
                             wb.textContent = "Connect Wallet";
                             wb.disabled = false;
-                            return; // user rejected
+                            return;
                         }
-                        // Any other error (duplicate RPC etc.) — chain likely already exists, continue
-                        console.warn("Add chain warning (likely already exists):", addErr.message);
                     }
-                } else if (switchErr.code === 4001) {
-                    wb.textContent = "Connect Wallet";
-                    wb.disabled = false;
-                    return; // user rejected switch
                 }
-                // For any other switch error, verify we are actually on Arc before continuing
-            }
-            // Hard verify we are on Arc Testnet before proceeding
-            const connectedNetwork = await new ethers.BrowserProvider(evmProvider).getNetwork();
-            if (Number(connectedNetwork.chainId) !== 5042002) {
-                wb.textContent = "Connect Wallet";
-                wb.disabled = false;
-                alert("Please switch to Arc Testnet (Chain ID: 5042002) in your wallet to use ArcPay.");
-                return;
             }
 
-            // ── Init provider & signer ────────────────────────────
             provider = new ethers.BrowserProvider(evmProvider);
             signer = await provider.getSigner();
             userAddress = await signer.getAddress();
+
             arcpayContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-            // ── Update UI ─────────────────────────────────────────
-            wb.textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-            wb.disabled = false;
-            wb.style.cssText = "background:rgba(16,185,129,0.15);color:var(--arc-green);border:1px solid rgba(16,185,129,0.3);padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;";
-            document.getElementById("disconnect-btn").style.display = "inline-block";
-            document.getElementById("pay-btn").disabled = false;
-            document.getElementById("pay-btn").textContent = `Pay with ${selectedPayCurrency}`;
-            document.getElementById("swap-btn").disabled = false;
-            document.getElementById("swap-btn").textContent = "Swap on Arc Network";
-            document.getElementById("inv-btn").disabled = false;
-            document.getElementById("inv-btn").textContent = "Create Invoice";
-            document.getElementById("copy-address-btn").disabled = false;
-            document.getElementById("copy-address-btn").textContent = "Copy Address";
-            document.getElementById("receive-address").value = userAddress;
+            document.getElementById('disconnect-btn').style.display = 'block';
+            wb.style.display = 'none';
 
-            // ── Load data ─────────────────────────────────────────
+            document.getElementById('pay-btn').disabled = false;
+            document.getElementById('pay-btn').textContent = "Pay Freelancer";
+            document.getElementById('swap-btn').disabled = false;
+            document.getElementById('swap-btn').textContent = "Swap";
+            document.getElementById('inv-btn').disabled = false;
+            document.getElementById('inv-btn').textContent = "Create Invoice";
+
+            document.getElementById('receive-address').value = userAddress;
+            document.getElementById('copy-address-btn').disabled = false;
+            document.getElementById('copy-address-btn').textContent = "Copy Address";
+
             loadBalances();
-            loadOnChainHistory();
-            loadContractStats();
+            loadSwapBalances();
+            loadOnChainInvoices();
 
-            // ── Listen for account/chain changes ──────────────────
-            evmProvider.on('accountsChanged', (accounts) => {
-                if (accounts.length === 0) disconnectWallet();
-                else {
-                    userAddress = accounts[0];
-                    wb.textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-                    loadBalances();
-                    loadOnChainHistory();
-                }
-            });
-            evmProvider.on('chainChanged', () => window.location.reload());
-
-        } catch(e) {
+        } catch(err) {
+            console.error("Wallet connection failed:", err);
             wb.textContent = "Connect Wallet";
             wb.disabled = false;
-            if (e.code !== 4001) alert("Connection failed: " + e.message);
         }
     }
 
     function disconnectWallet() {
-        provider = null; signer = null; userAddress = null;
-        const wb = document.getElementById("wallet-btn");
-        wb.textContent = "Connect Wallet"; wb.style.cssText = "";
-        wb.className = "btn btn-accent";
-        document.getElementById("disconnect-btn").style.display = "none";
-        document.getElementById("pay-btn").disabled = true;
-        document.getElementById("pay-btn").textContent = "Connect Wallet to Pay";
-        document.getElementById("swap-btn").disabled = true;
-        document.getElementById("swap-btn").textContent = "Connect Wallet to Swap";
-        document.getElementById("inv-btn").disabled = true;
-        document.getElementById("inv-btn").textContent = "Connect Wallet to Create Invoice";
-        document.getElementById("copy-address-btn").disabled = true;
-        document.getElementById("copy-address-btn").textContent = "Connect Wallet First";
-        document.getElementById("receive-address").value = "";
-        document.getElementById("usdc-balance").textContent = "—";
+        provider = null;
+        signer = null;
+        userAddress = null;
+        arcpayContract = null;
+
+        document.getElementById('disconnect-btn').style.display = 'none';
+        const wb = document.getElementById('wallet-btn');
+        wb.style.display = 'block';
+        wb.textContent = "Connect Wallet";
+        wb.disabled = false;
+
+        document.getElementById('pay-btn').disabled = true;
+        document.getElementById('pay-btn').textContent = "Connect Wallet to Pay";
+        document.getElementById('swap-btn').disabled = true;
+        document.getElementById('swap-btn').textContent = "Connect Wallet to Swap";
+        document.getElementById('inv-btn').disabled = true;
+        document.getElementById('inv-btn').textContent = "Connect Wallet to Create Invoice";
+
+        document.getElementById('receive-address').value = "";
+        document.getElementById('copy-address-btn').disabled = true;
+        document.getElementById('copy-address-btn').textContent = "Connect Wallet First";
+
+        document.getElementById('usdc-balance').textContent = "—";
+        document.getElementById('swap-from-balance').textContent = "—";
     }
 
     async function loadBalances() {
         if (!provider || !userAddress) return;
-        // On Arc, USDC IS the native token — read native balance
         try {
-            const nativeBal = await provider.getBalance(userAddress);
-            // Native balance is 18 decimals on Arc
-            const formatted = parseFloat(ethers.formatEther(nativeBal)).toFixed(2);
-            document.getElementById("usdc-balance").textContent = formatted;
+            const usdcContract = new ethers.Contract(USDC_ERC20, ERC20_ABI, provider);
+            const bal = await usdcContract.balanceOf(userAddress);
+            const decimals = await usdcContract.decimals();
+            document.getElementById('usdc-balance').textContent = `${parseFloat(ethers.formatUnits(bal, decimals)).toFixed(2)} USDC`;
         } catch(e) {
-            document.getElementById("usdc-balance").textContent = "0.00";
+            console.warn("USDC Balance failed:", e);
         }
-        loadSwapBalances();
     }
 
     async function loadSwapBalances() {
         if (!provider || !userAddress) return;
-        // Always read fresh from the select element
-        const fromEl = document.getElementById('swap-from-token');
-        const from = fromEl?.value || 'USDC';
-        // Guard: if showing ETH balance but USDC is selected, force reload
-        const balEl2 = document.getElementById('swap-from-balance');
-        if (balEl2 && balEl2.textContent.includes('ETH') && from === 'USDC') {
-            balEl2.textContent = 'Loading...';
-        }
-        const balEl = document.getElementById('swap-from-balance');
-        if (!balEl) return;
-        balEl.textContent = 'Loading...';
         try {
-            if (from === 'USDC') {
-                // USDC = native token on Arc — read native balance
-                const bal = await provider.getBalance(userAddress);
-                balEl.textContent = `${parseFloat(ethers.formatEther(bal)).toFixed(2)} USDC`;
-            } else if (from === 'EURC') {
-                const eurc = new ethers.Contract(EURC_ADDRESS, ERC20_ABI, provider);
-                const bal = await eurc.balanceOf(userAddress);
-                const decimals = await eurc.decimals().catch(() => 6);
-                balEl.textContent = `${parseFloat(ethers.formatUnits(bal, decimals)).toFixed(2)} EURC`;
-            }
+            const tokenSymbol = document.getElementById('swap-from-token').value;
+            const tokenAddress = tokenSymbol === "USDC" ? USDC_ERC20 : EURC_ADDRESS;
+            const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+            const decimals = await tokenContract.decimals();
+            const bal = await tokenContract.balanceOf(userAddress);
+            document.getElementById('swap-from-balance').textContent = `${parseFloat(ethers.formatUnits(bal, decimals)).toFixed(4)} ${tokenSymbol}`;
         } catch(e) {
-            balEl.textContent = '0.00';
+            document.getElementById('swap-from-balance').textContent = "—";
         }
     }
 
-    async function sendPayment() {
-        const recipient = document.getElementById("pay-recipient").value.trim();
-        const amount    = document.getElementById("pay-amount").value.trim();
-        const memo      = document.getElementById("pay-memo").value.trim() || "ArcPay payment";
-        const status    = document.getElementById("pay-status");
+    // ── ESTIMATE REAL SWAP (On-Chain Liquidity Quote) ───────────────────────
+    async function estimateRealSwap() {
+        const amountInput = document.getElementById('swap-from-amount').value.trim();
+        const fromTokenSymbol = document.getElementById('swap-from-token').value;
+        const toTokenSymbol = document.getElementById('swap-to-token').value;
 
-        if (!recipient || !ethers.isAddress(recipient)) {
-            status.className = "tx-status error";
-            status.textContent = "⚠ Enter a valid recipient wallet address.";
-            return;
-        }
-        if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
-            status.className = "tx-status error";
-            status.textContent = "⚠ Enter a valid amount greater than 0.";
-            return;
-        }
-        if (!signer) {
-            status.className = "tx-status error";
-            status.textContent = "⚠ Connect your wallet first.";
-            return;
-        }
-
-        try {
-            status.className = "tx-status pending";
-            document.getElementById("pay-btn").disabled = true;
-            let tx;
-
-            if (selectedPayCurrency === "ETH") {
-                const amountWei = ethers.parseEther(amount);
-
-                // Check if user is registered on contract
-                let isReg = false;
-                try {
-                    isReg = await arcpayContract.isRegistered(userAddress);
-                } catch(e) { isReg = false; }
-
-                const feeDataNative = await provider.getFeeData();
-                const gasPriceNative = feeDataNative.gasPrice || ethers.parseUnits("25", "gwei");
-                if (isReg && arcpayContract) {
-                    status.textContent = "⏳ Sending via ArcPay contract...";
-                    tx = await arcpayContract.sendPayment(
-                        recipient, memo, "USDC",
-                        { value: amountWei, gasPrice: gasPriceNative }
-                    );
-                } else {
-                    status.textContent = "⏳ Sending USDC on Arc Testnet...";
-                    tx = await signer.sendTransaction({
-                        to: recipient,
-                        value: amountWei,
-                        gasPrice: gasPriceNative
-                    });
-                }
-
-            } else if (selectedPayCurrency === "USDC") {
-                // USDC on Arc is the NATIVE token — send like ETH using value field
-                // NOT an ERC-20 transfer — native USDC uses 6 decimals for amounts
-                status.textContent = "⏳ Sending USDC on Arc Testnet...";
-                const feeData = await provider.getFeeData();
-                const gasPrice = feeData.gasPrice || ethers.parseUnits("25", "gwei");
-                // Arc USDC: native token, 6 decimals for user amounts but 18 for wei
-                // Use parseEther since native balance is 18 decimals
-                const amountWei = ethers.parseEther(amount);
-                tx = await signer.sendTransaction({
-                    to: recipient,
-                    value: amountWei,
-                    gasPrice
-                });
-
-            } else {
-                // EURC
-                status.textContent = "⏳ Sending EURC on Arc Testnet...";
-                const eurc = new ethers.Contract(EURC_ADDRESS, ERC20_ABI, signer);
-                const decimals = await eurc.decimals().catch(() => 6);
-                const feeData = await provider.getFeeData();
-                const gasPrice = feeData.gasPrice || ethers.parseUnits("25", "gwei");
-                tx = await eurc.transfer(recipient, ethers.parseUnits(amount, decimals), { gasPrice });
-            }
-
-            status.textContent = `⏳ Confirming... Tx: ${tx.hash.slice(0,12)}...`;
-            const receipt = await tx.wait();
-
-            status.className = "tx-status success";
-            status.textContent = `✅ Payment sent! ${amount} ${selectedPayCurrency} · "${memo}" · <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:var(--arc-green)">View on ArcScan ↗</a> · Block: ${receipt.blockNumber}`;
-            document.getElementById("pay-amount").value = "";
-            document.getElementById("pay-memo").value = "";
-            document.getElementById("pay-btn").disabled = false;
-            // Reload balances twice — once immediately, once after 3s for chain to confirm
-            loadBalances();
-            loadOnChainHistory();
-            setTimeout(() => { loadBalances(); loadOnChainHistory(); }, 3000);
-        } catch(e) {
-            status.className = "tx-status error";
-            const msg = e.reason || e.data?.message || e.message || "Transaction failed";
-            if (msg.includes("Amount required") || msg.includes("Profile not found")) {
-                status.textContent = "⚠ Payment failed: Make sure you have enough Arc testnet balance. Get funds from the faucet first.";
-            } else if (e.code === 4001 || e.code === "ACTION_REJECTED") {
-                status.textContent = "⚠ Transaction rejected by wallet.";
-            } else if (msg.includes("insufficient funds")) {
-                status.textContent = `⚠ Insufficient ${selectedPayCurrency} balance. Get Arc testnet funds from the faucet.`;
-            } else {
-                status.textContent = "⚠ " + msg;
-            }
-            document.getElementById("pay-btn").disabled = false;
-        }
-    }
-
-    // ── LOAD ON-CHAIN PAYMENT HISTORY ──────────────────────────
-    async function loadOnChainHistory() {
-        if (!arcpayContract || !userAddress) return;
-        try {
-            const history = await arcpayContract.getPaymentHistory(userAddress);
-            const el = document.getElementById("payment-history");
-            if (!el) return;
-            if (history.length === 0) {
-                el.innerHTML = '<div class="state-msg">No on-chain payments yet.</div>';
-                return;
-            }
-            el.innerHTML = [...history].reverse().map(p => {
-                const isSent = p[0].toLowerCase() === userAddress.toLowerCase();
-                const amt = parseFloat(ethers.formatEther(p[2])).toFixed(4);
-                return `<div class="history-item">
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <span style="font-size:13px;font-weight:600">${isSent ? '↑ Sent' : '↓ Received'}</span>
-                        <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:${isSent ? 'var(--red)' : 'var(--arc-green)'}">${isSent ? '-' : '+'}${amt} ${p[4]}</span>
-                    </div>
-                    <div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:4px">${isSent ? 'To: ' + p[1].slice(0,10) + '...' : 'From: ' + p[0].slice(0,10) + '...'} · ${p[3]}</div>
-                    <div style="font-size:10px;color:var(--muted);margin-top:2px;font-family:'JetBrains Mono',monospace">${new Date(Number(p[5])*1000).toLocaleString()}</div>
-                </div>`;
-            }).join('');
-        } catch(e) { console.warn('History load failed:', e.message); }
-    }
-
-    // ── LOAD ON-CHAIN STATS ─────────────────────────────────────
-    async function loadContractStats() {
-        try {
-            const rc = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, new ethers.JsonRpcProvider("https://rpc.testnet.arc.network"));
-            const [vol, pays, freelancers] = await Promise.all([
-                rc.totalVolume(), rc.totalPayments(), rc.totalFreelancers()
-            ]);
-            const volEl = document.getElementById("stat-volume");
-            const payEl = document.getElementById("stat-payments");
-            const frEl  = document.getElementById("stat-freelancers");
-            if (volEl) volEl.textContent = parseFloat(ethers.formatEther(vol)).toFixed(2) + " ETH";
-            if (payEl) payEl.textContent = pays.toString();
-            if (frEl)  frEl.textContent  = freelancers.toString();
-        } catch(e) {}
-    }
-
-    // ── SWAP UPGRADE ─────────────────────────────────────────────
-    // USDC and EURC are both live, fiat-backed stablecoins on Arc, so their
-    // real exchange rate just tracks the EUR/USD forex rate. We pull that
-    // from a live FX API instead of guessing at a fixed number.
-    async function fetchFxRate() {
-        try {
-            const res = await fetch('https://api.frankfurter.app/latest?from=EUR&to=USD');
-            const data = await res.json();
-            if (data?.rates?.USD) eurUsdRate = data.rates.USD;
-        } catch(e) {
-            console.warn('FX rate fetch failed:', e.message);
-        }
-        const rateEl = document.getElementById('swap-rate');
-        if (rateEl && eurUsdRate == null) rateEl.textContent = 'Rate: unavailable — check connection';
-        estimateSwap();
-        return eurUsdRate;
-    }
-
-    function setSlippage(el) {
-        document.querySelectorAll('#slippage-btns .provider-btn').forEach(b => b.classList.remove('selected'));
-        el.classList.add('selected');
-        selectedSlippage = parseFloat(el.dataset.slip) || 0.5;
-        estimateSwap();
-    }
-
-    function estimateSwap() {
-        const amount = parseFloat(document.getElementById('swap-from-amount').value) || 0;
-        const from = document.getElementById('swap-from-token').value;
-        const to = document.getElementById('swap-to-token').value;
-
-        if (eurUsdRate == null) {
+        if (fromTokenSymbol === toTokenSymbol) {
             document.getElementById('swap-to-amount').value = '';
-            document.getElementById('swap-rate').textContent = 'Rate: loading live FX…';
+            document.getElementById('swap-rate').textContent = "Select different tokens";
             document.getElementById('swap-route').style.display = 'none';
             return;
         }
 
-        // USDC is worth 1 USD; EURC is worth the live EUR/USD rate in USD terms.
-        const usdValue = { USDC: 1, EURC: eurUsdRate };
-        const rate = usdValue[from] / usdValue[to];
-        const out = amount * rate;
-        const minReceived = out * (1 - selectedSlippage / 100);
-        const fee = out * 0.003;
+        if (!amountInput || isNaN(parseFloat(amountInput)) || parseFloat(amountInput) <= 0) {
+            document.getElementById('swap-to-amount').value = '';
+            document.getElementById('swap-rate').textContent = "Enter an amount";
+            document.getElementById('swap-route').style.display = 'none';
+            return;
+        }
 
-        document.getElementById('swap-to-amount').value = amount > 0 ? out.toFixed(4) : '';
-        document.getElementById('swap-rate').textContent = `1 ${from} ≈ ${rate.toFixed(4)} ${to} (live EUR/USD)`;
+        const fromTokenAddress = fromTokenSymbol === "USDC" ? USDC_ERC20 : EURC_ADDRESS;
+        const toTokenAddress = toTokenSymbol === "USDC" ? USDC_ERC20 : EURC_ADDRESS;
 
-        const routeEl = document.getElementById('swap-route');
-        if (amount > 0) {
-            routeEl.style.display = 'block';
-            document.getElementById('sw-route').textContent = `${from} → ${to === 'USDC' ? 'Arc USDC' : to}`;
-            document.getElementById('sw-fee').textContent = `${fee.toFixed(4)} ${to} (0.3%)`;
-            document.getElementById('sw-min').textContent = `${minReceived.toFixed(4)} ${to}`;
-        } else {
-            routeEl.style.display = 'none';
+        try {
+            const activeProvider = provider || new ethers.JsonRpcProvider(ARC_TESTNET.rpcUrls[0]);
+            const routerContract = new ethers.Contract(DEX_ROUTER_ADDRESS, DEX_ROUTER_ABI, activeProvider);
+            const fromContract = new ethers.Contract(fromTokenAddress, ERC20_ABI, activeProvider);
+            const toContract = new ethers.Contract(toTokenAddress, ERC20_ABI, activeProvider);
+
+            const fromDecimals = await fromContract.decimals();
+            const toDecimals = await toContract.decimals();
+
+            const amountInWei = ethers.parseUnits(amountInput, fromDecimals);
+            const path = [fromTokenAddress, toTokenAddress];
+
+            // Real lookup from DEX liquidity reserves
+            const amountsOut = await routerContract.getAmountsOut(amountInWei, path);
+            const expectedOutputWei = amountsOut[1];
+
+            const formattedOutput = ethers.formatUnits(expectedOutputWei, toDecimals);
+            document.getElementById('swap-to-amount').value = parseFloat(formattedOutput).toFixed(4);
+
+            const slippageMultiplier = 1 - (selectedSlippage / 100);
+            const minReceivedWei = (BigInt(expectedOutputWei) * BigInt(Math.floor(slippageMultiplier * 10000))) / 10000n;
+            const formattedMin = ethers.formatUnits(minReceivedWei, toDecimals);
+
+            // Fetch live rate for display
+            const conversionRate = parseFloat(formattedOutput) / parseFloat(amountInput);
+            document.getElementById('swap-rate').textContent = `1 ${fromTokenSymbol} = ${conversionRate.toFixed(4)} ${toTokenSymbol}`;
+
+            document.getElementById('swap-route').style.display = 'block';
+            document.getElementById('sw-route').textContent = `${fromTokenSymbol} → ${toTokenSymbol}`;
+            document.getElementById('sw-fee').textContent = `DEX Pool Fee (~0.30%)`;
+            document.getElementById('sw-min').textContent = `${parseFloat(formattedMin).toFixed(4)} ${toTokenSymbol}`;
+
+        } catch (err) {
+            console.error("Quote estimation failed:", err);
+            document.getElementById('swap-rate').textContent = "No pool liquidity reserves found";
+            document.getElementById('swap-to-amount').value = '';
+            document.getElementById('swap-route').style.display = 'none';
         }
     }
 
     function flipSwap() {
-        const fromToken = document.getElementById('swap-from-token');
-        const toToken = document.getElementById('swap-to-token');
-        const temp = fromToken.value;
-        fromToken.value = toToken.value;
-        toToken.value = temp;
-        estimateSwap();
+        const fromSel = document.getElementById('swap-from-token');
+        const toSel = document.getElementById('swap-to-token');
+        const temp = fromSel.value;
+        fromSel.value = toSel.value;
+        toSel.value = temp;
+
+        const fromAmt = document.getElementById('swap-from-amount');
+        const toAmt = document.getElementById('swap-to-amount');
+        if (toAmt.value) {
+            fromAmt.value = toAmt.value;
+        }
+
+        estimateRealSwap();
+        loadSwapBalances();
     }
 
-    // ── LIVE SWAP ON ARC TESTNET ─────────────────────────────────
-    // Arc testnet swap: sends assets directly on-chain. Since it is a simulation
-    // until DEX contracts are deployed, it routes the transfer as a self-transaction
-    // so you generate a real block Tx hash without losing your assets!
+    function setSlippage(btn) {
+        document.querySelectorAll('#slippage-btns .provider-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        const slip = btn.dataset.slip;
+        if (slip === 'custom') {
+            const userSlip = prompt("Enter custom slippage tolerance % (e.g. 0.5):", "0.5");
+            selectedSlippage = parseFloat(userSlip) || 0.1;
+            btn.textContent = `Custom (${selectedSlippage}%)`;
+        } else {
+            selectedSlippage = parseFloat(slip);
+            document.querySelector('[data-slip="custom"]').textContent = "Custom";
+        }
+        estimateRealSwap();
+    }
+
+    // ── DO SWAP (Execute Real Swap On-Chain) ───────────────────────────
     async function doSwap() {
         const status = document.getElementById('swap-status');
         const btn = document.getElementById('swap-btn');
-        const fromEl = document.getElementById('swap-from-token');
-        const toEl = document.getElementById('swap-to-token');
-        const amount = document.getElementById('swap-from-amount').value.trim();
-        const from = fromEl.value;
-        const to = toEl.value;
+        const fromTokenSymbol = document.getElementById('swap-from-token').value;
+        const toTokenSymbol = document.getElementById('swap-to-token').value;
+        const amountInput = document.getElementById('swap-from-amount').value.trim();
 
-        // ── Validation ────────────────────────────────────────────
-        if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+        if (!amountInput || isNaN(parseFloat(amountInput)) || parseFloat(amountInput) <= 0) {
             status.className = 'tx-status error';
-            status.textContent = '⚠ Enter a valid amount.';
+            status.textContent = '⚠ Enter a valid amount to swap.';
             return;
         }
-        if (from === to) {
+        if (fromTokenSymbol === toTokenSymbol) {
             status.className = 'tx-status error';
             status.textContent = '⚠ Select different tokens to swap.';
             return;
@@ -850,176 +684,181 @@
             return;
         }
 
-        // ── Ensure on Arc Testnet ─────────────────────────────────
-        try {
-            const network = await provider.getNetwork();
-            if (Number(network.chainId) !== 5042002) {
-                status.className = 'tx-status pending';
-                status.textContent = '⏳ Switching to Arc Testnet...';
-                await window.ethereum.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: '0x4cef52' }]
-                }).catch(async e => {
-                    if (e.code === 4902) await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [ARC_TESTNET] });
-                    else throw e;
-                });
-                provider = new ethers.BrowserProvider(window.ethereum);
-                signer = await provider.getSigner();
-                arcpayContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-            }
-        } catch(e) {
-            status.className = 'tx-status error';
-            status.textContent = '⚠ Could not switch to Arc Testnet: ' + e.message;
-            return;
-        }
-
-        // ── Check real balance ────────────────────────────────────
-        try {
-            if (from === 'USDC') {
-                const bal = await provider.getBalance(userAddress);
-                if (bal < ethers.parseEther(amount)) {
-                    status.className = 'tx-status error';
-                    status.textContent = `⚠ Insufficient USDC. Balance: ${parseFloat(ethers.formatEther(bal)).toFixed(4)} USDC`;
-                    return;
-                }
-            } else {
-                const token = new ethers.Contract(EURC_ADDRESS, ERC20_ABI, provider);
-                const decimals = await token.decimals().catch(() => 6);
-                const bal = await token.balanceOf(userAddress);
-                const needed = ethers.parseUnits(amount, decimals);
-                if (bal < needed) {
-                    status.className = 'tx-status error';
-                    status.textContent = `⚠ Insufficient ${from}. Balance: ${parseFloat(ethers.formatUnits(bal, decimals)).toFixed(2)} ${from}`;
-                    return;
-                }
-            }
-        } catch(e) {
-            console.warn('Balance check failed:', e.message);
-        }
-
         btn.disabled = true;
         status.className = 'tx-status pending';
-        status.textContent = `⏳ Sending simulated swap tx for ${from} on Arc Testnet...`;
+        status.textContent = '⏳ Preparing swap transaction...';
 
         try {
-            const feeData = await provider.getFeeData();
-            const gasPrice = feeData.gasPrice;
-            if (eurUsdRate == null) await fetchFxRate();
-            const usdValue = { USDC: 1, EURC: eurUsdRate || 1 };
-            const rate = usdValue[from] / usdValue[to];
-            const received = (parseFloat(amount) * rate * (1 - selectedSlippage / 100)).toFixed(4);
-            let tx, receipt;
+            const fromTokenAddress = fromTokenSymbol === "USDC" ? USDC_ERC20 : EURC_ADDRESS;
+            const toTokenAddress = toTokenSymbol === "USDC" ? USDC_ERC20 : EURC_ADDRESS;
 
-            if (from === 'USDC') {
-                // USDC is native on Arc — simulated via self-transaction
-                tx = await signer.sendTransaction({
-                    to: userAddress,
-                    value: ethers.parseEther(amount),
-                    gasPrice
-                });
-            } else if (from === 'EURC') {
-                const eurc = new ethers.Contract(EURC_ADDRESS, ERC20_ABI, signer);
-                const decimals = await eurc.decimals().catch(() => 6);
-                tx = await eurc.transfer(
-                    userAddress,
-                    ethers.parseUnits(amount, decimals),
-                    { gasPrice }
-                );
+            const fromContract = new ethers.Contract(fromTokenAddress, ERC20_ABI, signer);
+            const routerContract = new ethers.Contract(DEX_ROUTER_ADDRESS, DEX_ROUTER_ABI, signer);
+
+            const fromDecimals = await fromContract.decimals();
+            const toDecimals = await fromContract.decimals();
+            const amountInWei = ethers.parseUnits(amountInput, fromDecimals);
+
+            // Step A: Auto-Approval Flow
+            status.textContent = `⏳ Verifying your token allowance...`;
+            const currentAllowance = await fromContract.allowance(userAddress, DEX_ROUTER_ADDRESS);
+
+            if (currentAllowance < amountInWei) {
+                status.textContent = `✍ Sign the transaction to approve the DEX Router to spend your ${fromTokenSymbol}...`;
+                const approveTx = await fromContract.approve(DEX_ROUTER_ADDRESS, ethers.MaxUint256);
+                status.textContent = `⏳ Approving tokens on-chain...`;
+                await approveTx.wait();
+                status.textContent = `✅ Token allowance approved successfully!`;
             }
 
-            status.textContent = `⏳ Confirming... Tx: ${tx.hash.slice(0,14)}...`;
-            receipt = await tx.wait();
+            // Step B: Fetch Live Swap Quote & Slippage Limits
+            status.textContent = `⏳ Confirming final on-chain pool pricing...`;
+            const path = [fromTokenAddress, toTokenAddress];
+            const amountsOut = await routerContract.getAmountsOut(amountInWei, path);
+            const expectedOutputWei = amountsOut[1];
+
+            const slippageMultiplier = 1 - (selectedSlippage / 100);
+            const minAmountOutWei = (BigInt(expectedOutputWei) * BigInt(Math.floor(slippageMultiplier * 10000))) / 10000n;
+
+            // Step C: Execute the DEX Swap
+            status.textContent = `✍ Please sign standard ERC-20 swap confirmation in your wallet...`;
+            const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minute execution limit
+
+            const tx = await routerContract.swapExactTokensForTokens(
+                amountInWei,
+                minAmountOutWei,
+                path,
+                userAddress,
+                deadline
+            );
+
+            status.textContent = `⏳ Processing transaction on Arc. Tx: ${tx.hash.slice(0, 14)}...`;
+            const receipt = await tx.wait();
 
             status.className = 'tx-status success';
-            status.textContent = `✅ Simulated swap complete! Sent ${amount} ${from} on Arc · Simulated conversion: ~${received} ${to} · <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:var(--arc-green)">View on ArcScan ↗</a> · Block: ${receipt.blockNumber}`;
+            status.innerHTML = `✅ Swapped ${amountInput} ${fromTokenSymbol} successfully! <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:var(--arc-green)">View on Explorer ↗</a>`;
+
             document.getElementById('swap-from-amount').value = '';
             document.getElementById('swap-to-amount').value = '';
             document.getElementById('swap-route').style.display = 'none';
-            loadBalances();
 
-        } catch(e) {
+            loadBalances();
+            loadSwapBalances();
+
+        } catch (err) {
             status.className = 'tx-status error';
-            if (e.code === 4001 || e.code === 'ACTION_REJECTED') {
-                status.textContent = '⚠ Transaction cancelled.';
-            } else if (e.message?.includes('insufficient funds')) {
-                status.textContent = `⚠ Insufficient ${from} for gas + amount. Check your Arc Testnet balance.`;
-            } else {
-                status.textContent = '⚠ ' + (e.reason || e.message || 'Swap failed');
-            }
+            console.error(err);
+            status.textContent = `⚠ Swap failed: ${err.reason || err.message || "Unknown error occurred"}`;
         } finally {
             btn.disabled = false;
         }
     }
 
-    function copyAddress() {
-        const addr = document.getElementById("receive-address").value;
-        if (!addr) return;
-        navigator.clipboard.writeText(addr).then(() => {
-            const status = document.getElementById("receive-status");
+    // ── ARCPAY CORE PAYMENT FLOWS ────────────────────────────────────
+    async function sendPayment() {
+        const btn = document.getElementById('pay-btn');
+        const status = document.getElementById('pay-status');
+        const recipient = document.getElementById('pay-recipient').value.trim();
+        const amount = document.getElementById('pay-amount').value.trim();
+        const memo = document.getElementById('pay-memo').value.trim();
+
+        if (!recipient || !amount || isNaN(parseFloat(amount))) {
+            status.className = "tx-status error";
+            status.textContent = "⚠ Please fill out all required fields with valid details.";
+            return;
+        }
+        if (!arcpayContract) return;
+
+        btn.disabled = true;
+        status.className = "tx-status pending";
+        status.textContent = "⏳ Preparing transaction...";
+
+        try {
+            const weiVal = ethers.parseEther(amount);
+            const tx = await arcpayContract.sendPayment(recipient, memo, "", { value: weiVal });
+            status.textContent = `⏳ Payment pending... Tx: ${tx.hash.slice(0,14)}...`;
+            await tx.wait();
+
             status.className = "tx-status success";
-            status.textContent = "✅ Address copied to clipboard!";
-            setTimeout(() => { status.style.display = "none"; }, 2000);
-        });
+            status.innerHTML = `✅ Payment completed! Freelancer received Arc USDC instantly. <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:var(--arc-green)">View on ArcScan ↗</a>`;
+
+            document.getElementById('pay-amount').value = "";
+            document.getElementById('pay-recipient').value = "";
+            document.getElementById('pay-memo').value = "";
+            loadBalances();
+        } catch(e) {
+            status.className = "tx-status error";
+            status.textContent = "⚠ Transaction failed: " + (e.reason || e.message);
+        } finally {
+            btn.disabled = false;
+        }
     }
 
     async function createInvoice() {
-        const client = document.getElementById("inv-client").value.trim();
-        const amount = document.getElementById("inv-amount").value;
-        const desc   = document.getElementById("inv-desc").value.trim();
-        const status = document.getElementById("inv-status");
+        const client = document.getElementById('inv-client').value.trim();
+        const amount = document.getElementById('inv-amount').value.trim();
+        const desc = document.getElementById('inv-desc').value.trim();
+        const status = document.getElementById('inv-status');
 
-        if (!ethers.isAddress(client)) { status.className = "tx-status error"; status.textContent = "⚠ Invalid client address."; return; }
-        if (!amount || parseFloat(amount) <= 0) { status.className = "tx-status error"; status.textContent = "⚠ Enter a valid amount."; return; }
-        if (!desc) { status.className = "tx-status error"; status.textContent = "⚠ Add a description."; return; }
-        if (!arcpayContract) { status.className = "tx-status error"; status.textContent = "⚠ Connect your wallet first."; return; }
+        if (!client || !amount || isNaN(parseFloat(amount))) {
+            status.className = "tx-status error";
+            status.textContent = "⚠ Fill out all invoice fields with valid values.";
+            return;
+        }
+        if (!arcpayContract) return;
+
+        document.getElementById('inv-btn').disabled = true;
+        status.className = "tx-status pending";
+        status.textContent = "⏳ Generating invoice on Arc...";
 
         try {
-            status.className = "tx-status pending";
-            status.textContent = "⏳ Creating invoice on Arc chain...";
-            document.getElementById("inv-btn").disabled = true;
-
-            // Convert amount to wei (invoice stored in ETH wei on contract)
-            const amountWei = ethers.parseEther(amount);
-            const feeData = await provider.getFeeData();
-            const gasPrice = feeData.gasPrice || ethers.parseUnits('25', 'gwei');
-            const tx = await arcpayContract.createInvoice(client, amountWei, desc, { gasPrice });
-            status.textContent = "⏳ Confirming... " + tx.hash.slice(0,12) + "...";
-            const receipt = await tx.wait();
+            const tokenAddress = USDC_ERC20;
+            const amountWei = ethers.parseUnits(amount, 18);
+            const tx = await arcpayContract.createInvoice(client, amountWei, desc);
+            status.textContent = `⏳ Registering invoice on-chain... Tx: ${tx.hash.slice(0,14)}`;
+            await tx.wait();
 
             status.className = "tx-status success";
-            status.textContent = `✅ Invoice created! <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:var(--arc-green)">View on ArcScan ↗</a> · Block: ${receipt.blockNumber}`;
-            document.getElementById("inv-client").value = "";
-            document.getElementById("inv-amount").value = "";
-            document.getElementById("inv-desc").value = "";
-            document.getElementById("inv-btn").disabled = false;
+            status.innerHTML = `✅ Invoice created successfully on-chain! <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:var(--arc-green)">View ↗</a>`;
+
+            document.getElementById('inv-client').value = '';
+            document.getElementById('inv-amount').value = '';
+            document.getElementById('inv-desc').value = '';
+
             loadOnChainInvoices();
         } catch(e) {
             status.className = "tx-status error";
-            status.textContent = "⚠ " + (e.reason || e.message || "Transaction failed");
-            document.getElementById("inv-btn").disabled = false;
+            status.textContent = "⚠ Invoice creation failed: " + (e.reason || e.message);
+        } finally {
+            document.getElementById('inv-btn').disabled = false;
         }
     }
 
     async function loadOnChainInvoices() {
         if (!arcpayContract || !userAddress) return;
         try {
-            const ids = await arcpayContract.getFreelancerInvoices(userAddress);
-            const el = document.getElementById("invoice-list");
-            if (!el || ids.length === 0) {
-                if (el) el.innerHTML = '<div class="state-msg" style="padding:20px">No on-chain invoices yet.</div>';
+            const clientIds = await arcpayContract.getClientInvoices(userAddress);
+            const freelancerIds = await arcpayContract.getFreelancerInvoices(userAddress);
+            const allIds = Array.from(new Set([...clientIds, ...freelancerIds])).sort((a,b) => Number(b) - Number(a));
+
+            const el = document.getElementById('invoice-list');
+            if (allIds.length === 0) {
+                el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:24px 0;font-size:13px">No on-chain invoice history found.</div>';
                 return;
             }
-            const STATUS_LABELS = ["PENDING","PAID","RELEASED","CANCELLED"];
-            const STATUS_COLORS = ["status-pending","status-paid","status-released","status-cancelled"];
-            let html = '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Your On-Chain Invoices</div>';
-            for (const id of [...ids].reverse()) {
+
+            let html = '<h3 style="font-size:14px;margin-bottom:12px;color:var(--muted)">On-Chain Invoices</h3>';
+            const STATUS_COLORS = ['status-pending', 'status-paid', 'status-released'];
+            const STATUS_LABELS = ['Unpaid', 'Escrow Paid', 'Funds Released'];
+
+            for (const id of allIds) {
                 try {
                     const inv = await arcpayContract.getInvoice(id);
-                    const amt = parseFloat(ethers.formatEther(inv[2])).toFixed(4);
-                    const st  = Number(inv[5]);
-                    html += `<div class="invoice-card">
+                    const st = Number(inv[5]);
+                    html += `
+                    <div class="invoice-card">
                         <div class="invoice-top">
-                            <span style="font-weight:700;font-size:14px">${amt} ETH</span>
+                            <span style="font-weight:700;font-family:'JetBrains Mono',monospace">${ethers.formatUnits(inv[2], 18)} USDC</span>
                             <span class="invoice-status ${STATUS_COLORS[st]}">${STATUS_LABELS[st]}</span>
                         </div>
                         <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${inv[3]}</div>
@@ -1044,11 +883,15 @@
         } catch(e) { alert('Release failed: ' + (e.reason || e.message)); }
     }
 
-    function renderInvoices() { loadOnChainInvoices(); }
-
-    // Load stats on page open (no wallet needed)
-    loadContractStats();
-    fetchFxRate();
+    function copyAddress() {
+        const input = document.getElementById('receive-address');
+        if (!input.value) return;
+        navigator.clipboard.writeText(input.value);
+        const status = document.getElementById('receive-status');
+        status.className = 'tx-status success';
+        status.textContent = "✅ Wallet address copied to clipboard!";
+        setTimeout(() => { status.style.display = 'none'; }, 3000);
+    }
 </script>
 </body>
 </html>
